@@ -103,6 +103,13 @@ class owfsplugin(protocols):
 
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
+            
+            try:
+                if ow_data == 'filter' and 0 <= int(value) <= 10:
+                    itemList[self.ow2index[ow_name]]['filter'] = int(value)
+            except ValueError:
+                logger.info('OWFS: invalid filter definition: %s'%value)
+                pass
 
     def getItem(self, itemName):
         try:
@@ -116,6 +123,16 @@ class owfsplugin(protocols):
                 attr =  getattr(sensor, name)
                 while attr == None:
                     attr =  getattr(sensor, name)
+                if 'filter' in item:
+                    window = item['filter']*2+1
+                    if not 'valuestore' in item:
+                        item['valuestore'] = []
+                    valuestore = item['valuestore']
+                    valuestore.append(attr)
+                    if len(valuestore) > window:
+                        del(valuestore[0])
+                    sortedvalues = sorted(valuestore)
+                    attr = valuestore[len(valuestore)/2]
                 return str(attr)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
